@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Select a Category{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cat.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="category-container">
+    <!-- Animated background decorations -->
+    <div class="category-background-decorations">
+        <img src="{{ url_for('static', filename='images/leaf.svg') }}" class="floating-decoration leaf-1" alt="">
+        <img src="{{ url_for('static', filename='images/circle.svg') }}" class="floating-decoration circle-1" alt="">
+        <img src="{{ url_for('static', filename='images/mint.svg') }}" class="floating-decoration mint-1" alt="">
+        <img src="{{ url_for('static', filename='images/garlic.svg') }}" class="floating-decoration garlic-1" alt="">
+        <img src="{{ url_for('static', filename='images/onion.svg') }}" class="floating-decoration onion-1" alt="">
+    </div>
+
+    <div class="category-header fade-in-up">
+        <h1>Choose Your Meal</h1>
+        <p>Discover our delicious categories and find your perfect dish</p>
+    </div>
+    
+    <div class="category-grid">
+        <a href="{{ url_for('menu', category='breakfast', table_number=session.get('table_number')) }}" class="category-card breakfast-card glass-card fade-in-up" style="animation-delay: 0.2s;">
+            <div class="card-background">
+                <img src="{{ url_for('static', filename='images/idli.svg') }}" class="category-bg-image" alt="Breakfast">
+                <img src="{{ url_for('static', filename='images/dosa.svg') }}" class="category-bg-image-2" alt="Breakfast">
+            </div>
+            <div class="card-content">
+                <div class="category-icon">
+                    <img src="{{ url_for('static', filename='images/t_bath.svg') }}" alt="Breakfast Icon">
+                </div>
+                <h2>Breakfast</h2>
+                <p>Start your day with traditional South Indian delicacies</p>
+                <div class="card-arrow">→</div>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('menu', category='lunch', table_number=session.get('table_number')) }}" class="category-card lunch-card glass-card fade-in-up" style="animation-delay: 0.4s;">
+            <div class="card-background">
+                <img src="{{ url_for('static', filename='images/thali.svg') }}" class="category-bg-image" alt="Lunch">
+                <img src="{{ url_for('static', filename='images/southmeal.svg') }}" class="category-bg-image-2" alt="Lunch">
+            </div>
+            <div class="card-content">
+                <div class="category-icon">
+                    <img src="{{ url_for('static', filename='images/palav.svg') }}" alt="Lunch Icon">
+                </div>
+                <h2>Lunch</h2>
+                <p>Hearty and satisfying meals for your midday cravings</p>
+                <div class="card-arrow">→</div>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('menu', category='beverages', table_number=session.get('table_number')) }}" class="category-card beverages-card glass-card fade-in-up" style="animation-delay: 0.6s;">
+            <div class="card-background">
+                <img src="{{ url_for('static', filename='images/coffe.svg') }}" class="category-bg-image" alt="Beverages">
+                <img src="{{ url_for('static', filename='images/coldcofee.svg') }}" class="category-bg-image-2" alt="Beverages">
+            </div>
+            <div class="card-content">
+                <div class="category-icon">
+                    <img src="{{ url_for('static', filename='images/masala-t.svg') }}" alt="Beverages Icon">
+                </div>
+                <h2>Beverages</h2>
+                <p>Refreshing drinks to complement your perfect meal</p>
+                <div class="card-arrow">→</div>
+            </div>
+        </a>
+    </div>
+    <a href="{{ url_for('cart', table_number=session.get('table_number', '0')) }}" 
+   class="cart-fab" 
+   aria-label="View cart">
+    🛒
+    <span id="cart-count-badge" class="cart-badge" style="display: none;">0</span>
+</a>
+    <div class="category-footer fade-in-up" style="animation-delay: 0.8s;">
+        <p>Can't decide? Our staff recommendations are marked with ⭐</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add entrance animations
+    const animatedElements = document.querySelectorAll('.fade-in-up');
+    animatedElements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        setTimeout(() => {
+            el.style.transition = 'all 0.6s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, 100 + index * 100);
+    });
+    
+    // Add hover effects to category cards
+    const categoryCards = document.querySelectorAll('.category-card');
+    categoryCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px) scale(1.02)';
+            this.querySelector('.card-arrow').style.transform = 'translateX(10px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.querySelector('.card-arrow').style.transform = 'translateX(0)';
+        });
+    });
+
+    function redirectToMenu(category) {
+        let tableNumber = "{{ session.get('table_number', '') }}";
+        if (!tableNumber) {
+            // Fallback to URL param just in case
+            const params = new URLSearchParams(window.location.search);
+            tableNumber = params.get('table_number');
+        }
+        
+        if (!tableNumber) {
+            alert("Table number is missing! Please scan the QR code again.");
+            window.location.href = "{{ url_for('index') }}";
+            return;
+        }
+        window.location.href = `/menu/${category}?table_number=${tableNumber}`;
+    }
+});
+</script>
+{% endblock %}

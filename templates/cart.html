@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Shopping Cart{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cart.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="cart-page-container">
+    <!-- Animated background decorations -->
+    <div class="cart-background-decorations">
+        <img src="{{ url_for('static', filename='images/leaf.svg') }}" class="floating-decoration leaf-1" alt="">
+        <img src="{{ url_for('static', filename='images/circle.svg') }}" class="floating-decoration circle-1" alt="">
+        <img src="{{ url_for('static', filename='images/mint.svg') }}" class="floating-decoration mint-1" alt="">
+        <img src="{{ url_for('static', filename='images/garlic.svg') }}" class="floating-decoration garlic-1" alt="">
+    </div>
+
+    <div class="cart-header fade-in-up">
+        <div class="cart-title-container">
+            <img src="{{ url_for('static', filename='images/cart.svg') }}" class="cart-icon bounce" alt="Cart">
+            <h2>Your Order Summary</h2>
+        </div>
+        <div class="table-badge">
+            <span>Table {{ table_number }}</span>
+        </div>
+    </div>
+
+    <div class="cart-body">
+        <div class="cart-items-panel glass-card fade-in-left">
+            <div class="panel-header">
+                <h3>Your Items</h3>
+                <div class="items-count">{{ cart_items|length }} items</div>
+            </div>
+            {% if cart_items %}
+                <ul class="cart-items-list">
+                    {% for item_id, item in cart_items.items() %}
+                    <li class="cart-item fade-in-up" style="animation-delay: {{ ('%.1f' % (loop.index0 * 0.1)) ~ 's' }};">
+                        <div class="item-info">
+                            <span class="item-name">{{ item.name }}</span>
+                            <div class="item-meta">
+                                <span class="item-quantity">Qty: {{ item.quantity }}</span>
+                                <span class="item-unit-price">₹{{ "%.2f"|format(item.price) }} each</span>
+                            </div>
+                        </div>
+                        <div class="item-total-price pulse">₹{{ "%.2f"|format(item.price * item.quantity) }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="cart-empty">
+                    <img src="{{ url_for('static', filename='images/dish-2 2.svg') }}" class="empty-cart-icon" alt="Empty cart">
+                    <p>Your cart is empty</p>
+                    <p class="empty-subtitle">Why not add something delicious?</p>
+                    <a href="{{ url_for('categories') }}" class="btn btn-primary">Browse Menu</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="cart-summary-panel glass-card fade-in-right">
+            <div class="panel-header">
+                <h3>Order Summary</h3>
+            </div>
+            <div class="summary-content">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span class="amount">₹{{ "%.2f"|format(cart_total) }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Service Charge</span>
+                    <span class="amount">₹0.00</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row total-row">
+                    <span>Total Amount</span>
+                    <span class="amount total-amount pulse">₹{{ "%.2f"|format(cart_total) }}</span>
+                </div>
+                
+                <div class="order-status-container">
+                    <div class="status-label">Current Status</div>
+                    <div class="order-status {{ full_cart_data.get('_meta', {}).get('status', 'pending')|lower }}">
+                        {{ full_cart_data.get('_meta', {}).get('status', 'Preparing') }}
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary place-order-btn shine" {% if not cart_items %}disabled{% endif %}>
+                    <span class="btn-text">Confirm Order</span>
+                    <span class="btn-loading" style="display: none;">
+                        <span class="spinner"></span>
+                        Processing...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-navigation fade-in-up">
+        <button class="btn btn-secondary nav-btn" onclick="window.location.href='{{ url_for('categories') }}'">
+            <span>‹ Browse More</span>
+        </button>
+    </div>
+
+<!-- Success Toast -->
+<div class="toast-container">
+    <div class="toast success-toast" id="successToast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-message">Order placed successfully!</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add entrance animations to elements
+    const animatedElements = document.querySelectorAll('.fade-in-up, .fade-in-left, .fade-in-right');
+    animatedElements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        setTimeout(() => {
+            el.style.transition = 'all 0.6s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, 100 + index * 100);
+    });
+
+    const confirmBtn = document.querySelector('.place-order-btn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            const btnText = confirmBtn.querySelector('.btn-text');
+            const btnLoading = confirmBtn.querySelector('.btn-loading');
+            
+            // Show loading state
+            confirmBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'flex';
+            confirmBtn.classList.add('loading');
+            
+            fetch('/submit_order', {method: 'POST'})
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Success state
+                        btnLoading.style.display = 'none';
+                        btnText.textContent = 'Order Placed! ✓';
+                        btnText.style.display = 'inline';
+                        confirmBtn.classList.remove('loading');
+                        confirmBtn.classList.add('success');
+                        
+                        // Show success toast
+                        showToast('Order placed successfully!', 'success');
+                        
+                        // Update the order status in the UI instead of redirecting
+                        const statusContainer = document.querySelector('.order-status');
+                        if (statusContainer) {
+                            statusContainer.textContent = 'Order Confirmed';
+                            statusContainer.className = 'order-status confirmed';
+                        }
+                    } else {
+                        // Error state
+                        resetButton();
+                        showToast(data.error || 'Order failed. Please try again.', 'error');
+                    }
+                })
+                .catch(() => {
+                    resetButton();
+                    showToast('Order failed. Please check your connection.', 'error');
+                });
+                
+            function resetButton() {
+                confirmBtn.disabled = false;
+                btnLoading.style.display = 'none';
+                btnText.style.display = 'inline';
+                confirmBtn.classList.remove('loading');
+            }
+        });
+    }
+    
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}-toast show`;
+        toast.innerHTML = `
+            <div class="toast-icon">${type === 'success' ? '✓' : '✕'}</div>
+            <div class="toast-message">${message}</div>
+        `;
+        
+        const container = document.querySelector('.toast-container');
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                container.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}

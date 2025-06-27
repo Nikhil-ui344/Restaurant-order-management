@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category|capitalize|e }} Menu{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/break.css') }}">
+<style>
+/* Style for the floating cart button */
+.cart-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background-color: #5cb85c;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 60px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    font-size: 24px;
+    text-decoration: none;
+    transition: transform 0.2s;
+}
+
+.cart-fab:hover {
+    transform: scale(1.1);
+}
+
+.cart-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    border: 2px solid white;
+}
+
+/* Pop animation for quantity */
+.quantity.pop {
+    animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="menu-page-container">
+    <div class="menu-header fade-in-up">
+        <h1>{{ category|capitalize|e }} Menu</h1>
+        <a href="{{ url_for('categories') }}" class="btn btn-secondary">‹ Back to Categories</a>
+    </div>
+
+    <div class="menu-grid">
+        {% for item in menu_items %}
+        <div class="menu-item card fade-in-up" data-delay="{{ loop.index0 * 0.1 }}" id="item-{{ item.id }}">
+            <img src="{{ url_for('static', filename='images/' + item.image|e) }}" alt="{{ item.name|e }}" class="menu-item-img">
+            <div class="menu-item-content">
+                <h3>{{ item.name|e }}</h3>
+                <p class="price">₹{{ item.price }}</p>
+                <div class="cart-controls">
+                    <button class="add-to-cart-btn btn btn-primary" 
+                            data-id="{{ item.id }}" 
+                            data-name="{{ item.name|e }}" 
+                            data-price="{{ item.price }}">
+                        Add to Cart
+                    </button>
+                    <div class="quantity-control" style="display: none;">
+                        <button class="quantity-btn decrement">-</button>
+                        <span class="quantity">1</span>
+                        <button class="quantity-btn increment">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Floating Action Button for Cart -->
+<a href="{{ url_for('cart', table_number=session.get('table_number', '0')) }}" 
+   class="cart-fab" 
+   aria-label="View cart">
+    🛒
+    <span id="cart-count-badge" class="cart-badge" style="display: none;">0</span>
+</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tableNumber = "{{ session.get('table_number', '')|e }}";
+
+    function updateCartCount(totalQuantity) {
+        const badge = document.getElementById('cart-count-badge');
+        if (totalQuantity > 0) {
+            badge.innerText = totalQuantity;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    async function getCartState() {
+        if (!tableNumber) return;
+        try {
+            const response = await fetch(`/cart/${tableNumber}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            if (!data || !data.cart_items) return;
+
+            let totalQuantity = 0;
+            const cartItems = data.cart_items;
+
+            document.querySelectorAll('.add-to-cart-btn').forEach(btn => btn.style.display = 'inline-block');
+            document.querySelectorAll('.quantity-control').forEach(qc => qc.style.display = 'none');
+
+            Object.keys(cartItems).forEach(id => {
+                const item = cartItems[id];
+                const menuItem = document.getElementById(`item-${id}`);
+                if (menuItem) {
+                    const quantity = item.quantity;
+                    totalQuantity += quantity;
+                    
+                    if (quantity > 0) {
+                        const addBtn = menuItem.querySelector('.add-to-cart-btn');
+                        const quantityControl = menuItem.querySelector('.quantity-control');
+                        const quantitySpan = quantityControl.querySelector('.quantity');
+
+                        addBtn.style.display = 'none';
+                        quantityControl.style.display = 'flex';
+                        quantitySpan.innerText = quantity;
+                    }
+                }
+            });
+            updateCartCount(totalQuantity);
+        } catch (error) {
+            console.error('Error fetching cart state:', error);
+        }
+    }
+
+    function adjustQuantity(id, name, price, change) {
+        const menuItem = document.getElementById(`item-${id}`);
+        if (!menuItem) return;
+
+        const quantityControl = menuItem.querySelector('.quantity-control');
+        const quantitySpan = quantityControl.querySelector('.quantity');
+        
+        // If the control is hidden, the effective current quantity is 0
+        const isVisible = quantityControl.style.display !== 'none';
+        let currentQuantity = isVisible ? (parseInt(quantitySpan.innerText) || 0) : 0;
+        
+        let newQuantity = currentQuantity + change;
+        if (newQuantity < 0) newQuantity = 0;
+
+        if (newQuantity === 0) {
+            const addBtn = menuItem.querySelector('.add-to-cart-btn');
+            addBtn.style.display = 'inline-block';
+            quantityControl.style.display = 'none';
+        } else {
+            quantitySpan.innerText = newQuantity;
+            quantityControl.style.display = 'flex';
+        }
+
+        fetch('/update_cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id,
+                name,
+                price: parseFloat(price),
+                quantity: newQuantity,
+                table_number: tableNumber
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to update cart');
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                console.error('Error updating cart:', data.error);
+                if(newQuantity === 0){
+                     const addBtn = menuItem.querySelector('.add-to-cart-btn');
+                    addBtn.style.display = 'inline-block';
+                    quantityControl.style.display = 'none';
+                } else {
+                    quantitySpan.innerText = currentQuantity;
+                }
+            } else {
+                updateCartCount(data.total_items);
+            }
+        })
+        .catch(error => {
+            console.error('Failed to update cart:', error);
+             if(newQuantity === 0){
+                 const addBtn = menuItem.querySelector('.add-to-cart-btn');
+                addBtn.style.display = 'inline-block';
+                quantityControl.style.display = 'none';
+            } else {
+                quantitySpan.innerText = currentQuantity;
+            }
+        });
+    }
+
+    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            const price = this.dataset.price;
+            adjustQuantity(id, name, price, 1);
+        });
+    });
+
+    document.querySelectorAll('.increment').forEach(button => {
+        button.addEventListener('click', function() {
+            const menuItem = this.closest('.menu-item');
+            const addBtn = menuItem.querySelector('.add-to-cart-btn');
+            const id = addBtn.dataset.id;
+            const name = addBtn.dataset.name;
+            const price = addBtn.dataset.price;
+            adjustQuantity(id, name, price, 1);
+        });
+    });
+
+    document.querySelectorAll('.decrement').forEach(button => {
+        button.addEventListener('click', function() {
+            const menuItem = this.closest('.menu-item');
+            const addBtn = menuItem.querySelector('.add-to-cart-btn');
+            const id = addBtn.dataset.id;
+            const name = addBtn.dataset.name;
+            const price = addBtn.dataset.price;
+            adjustQuantity(id, name, price, -1);
+        });
+    });
+
+    getCartState();
+});
+</script>
+{% endblock %}

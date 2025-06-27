@@ -1,0 +1,963 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+/* Flash notification styles */
+.flash-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    max-width: 400px;
+    animation: slideInRight 0.3s ease;
+}
+
+.flash-content {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: white;
+    border-left: 4px solid #007bff;
+}
+
+.flash-success .flash-content {
+    border-left-color: #28a745;
+    background: #d4edda;
+    color: #155724;
+}
+
+.flash-info .flash-content {
+    border-left-color: #17a2b8;
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.flash-warning .flash-content {
+    border-left-color: #ffc107;
+    background: #fff3cd;
+    color: #856404;
+}
+
+.flash-icon {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+.flash-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.flash-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: inherit;
+    margin-left: 10px;
+    opacity: 0.7;
+}
+
+.flash-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Pulse animation for urgent notifications */
+.flash-notification.urgent {
+    animation: slideInRight 0.3s ease, pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Order notification badge */
+.order-notification-badge {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ff4444;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    z-index: 3000;
+    animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+    0% { transform: translateX(-50%) scale(0); }
+    50% { transform: translateX(-50%) scale(1.2); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Animated background decorations -->
+    <div class="admin-background-decorations">
+        <img src="{{ url_for('static', filename='images/leaf.svg') }}" class="floating-decoration leaf-1" alt="">
+        <img src="{{ url_for('static', filename='images/circle.svg') }}" class="floating-decoration circle-1" alt="">
+        <img src="{{ url_for('static', filename='images/mint.svg') }}" class="floating-decoration mint-1" alt="">
+    </div>
+
+    <header class="admin-header glass-header fade-in-down">
+        <div class="header-content">
+            <div class="admin-title">
+                <img src="{{ url_for('static', filename='images/home.svg') }}" class="admin-icon pulse" alt="Admin">
+                <h1>Restaurant Dashboard</h1>
+            </div>
+            <div class="header-actions">
+                <button onclick="openAnalyticsModal()" class="btn btn-primary analytics-btn" title="View Analytics">
+                    <span>📊</span>
+                    <span>Analytics</span>
+                </button>
+                <button onclick="playNotificationSound('order')" class="btn btn-icon" title="Test Notification Sound">
+                    <span>🔊</span>
+                </button>
+                <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Business Analytics Section -->
+    <section class="analytics-section">
+        <h2 class="section-title fade-in-up">Business Analytics</h2>
+        <div class="analytics-grid">
+            <div class="stat-card glass-card fade-in-up" style="animation-delay: 0.1s;">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <h3>Total Revenue</h3>
+                    <p class="stat-value">₹{{ "%.2f"|format(analytics.total_revenue) }}</p>
+                </div>
+            </div>
+            <div class="stat-card glass-card fade-in-up" style="animation-delay: 0.2s;">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3>Total Orders</h3>
+                    <p class="stat-value">{{ analytics.total_orders }}</p>
+                </div>
+            </div>
+            <div class="stat-card glass-card fade-in-up" style="animation-delay: 0.3s;">
+                <div class="stat-icon">🌅</div>
+                <div class="stat-content">
+                    <h3>Breakfast Revenue</h3>
+                    <p class="stat-value">₹{{ "%.2f"|format(analytics.category_revenue.breakfast) }}</p>
+                </div>
+            </div>
+            <div class="stat-card glass-card fade-in-up" style="animation-delay: 0.4s;">
+                <div class="stat-icon">🍽️</div>
+                <div class="stat-content">
+                    <h3>Lunch Revenue</h3>
+                    <p class="stat-value">₹{{ "%.2f"|format(analytics.category_revenue.lunch) }}</p>
+                </div>
+            </div>
+            <div class="popular-items-card glass-card fade-in-up" style="animation-delay: 0.5s;">
+                <div class="card-header">
+                    <div class="stat-icon">⭐</div>
+                    <h3>Most Popular Items</h3>
+                </div>
+                {% if analytics.popular_items %}
+                <ul class="popular-items-list">
+                    {% for name, count in analytics.popular_items %}
+                    <li class="popular-item">
+                        <span class="item-name">{{ name }}</span>
+                        <span class="item-count">{{ count }} sold</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="no-data">No item data yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Active Orders Section -->
+    <section class="orders-section">
+        <h2 class="section-title fade-in-up">Active Orders</h2>
+        <div class="orders-container glass-card fade-in-up" style="animation-delay: 0.6s;">
+            {% if carts %}
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Table</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for table, cart in carts.items() %}
+                        <tr data-table="{{ table }}">
+                            <td><strong>#{{ table }}</strong></td>
+                            <td>
+                                <ul class="admin-items-list">
+                                    {% for item in cart['items'].values() %}
+                                        <li>{{ item.name }} <span class="qty">x{{ item.quantity }}</span></li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td>₹{{ "%.2f"|format(cart.total) }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('update_cart_status') }}" class="status-form">
+                                    <input type="hidden" name="table_number" value="{{ table }}">
+                                    <select name="status" onchange="this.form.submit()" class="status-select">
+                                        <option value="Preparing" {% if cart.status == 'Preparing' %}selected{% endif %}>Preparing</option>
+                                        <option value="Ordered" {% if cart.status == 'Ordered' %}selected{% endif %}>Ordered</option>
+                                        <option value="Cooking" {% if cart.status == 'Cooking' %}selected{% endif %}>Cooking</option>
+                                        <option value="Served" {% if cart.status == 'Served' %}selected{% endif %}>Served</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>{{ cart.last_updated or "" }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('delete_cart', table_number=table) }}" onsubmit="return confirm('Clear order for table {{ table }}?');">
+                                    <button type="submit" class="btn btn-danger">Clear</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No active orders at the moment.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Admin Management Section -->
+    <section class="admin-management-grid">
+        <div class="card fade-in-up" style="animation-delay: 0.6s;">
+            <h3>Add New Admin</h3>
+            <form method="POST" action="{{ url_for('admin_add') }}" class="management-form">
+                <div class="form-group">
+                    <label for="new-username">Username</label>
+                    <input type="text" id="new-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Password</label>
+                    <input type="password" id="new-password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Admin</button>
+            </form>
+        </div>
+
+        <div class="card fade-in-up" style="animation-delay: 0.7s;">
+            <h3>Remove Admin</h3>
+            <form method="POST" action="{{ url_for('admin_remove') }}" class="management-form">
+                <div class="form-group">
+                    <label for="remove-username">Username</label>
+                    <select id="remove-username" name="username" required>
+                        <option value="">-- Select Admin --</option>
+                        {% for admin in admins %}
+                            {% if admin.username != session.admin_username %}
+                            <option value="{{ admin.username }}">{{ admin.username }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to remove this admin?');">Remove Admin</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Analytics Modal -->
+    <div id="analyticsModal" class="analytics-modal">
+        <div class="analytics-modal-content glass-card">
+            <div class="analytics-modal-header">
+                <h2>📊 Business Analytics</h2>
+                <button onclick="closeAnalyticsModal()" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="analytics-tabs">
+                <button class="analytics-tab-btn active" onclick="switchAnalyticsTab('overview')">Overview</button>
+                <button class="analytics-tab-btn" onclick="switchAnalyticsTab('sales')">Sales</button>
+                <button class="analytics-tab-btn" onclick="switchAnalyticsTab('popular')">Popular Items</button>
+            </div>
+
+            <div class="analytics-content">
+                <!-- Overview Tab -->
+                <div id="overview-tab" class="analytics-tab-content active">
+                    <div class="analytics-stats-grid">
+                        <div class="analytics-stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-info">
+                                <h3>Total Revenue</h3>
+                                <p class="stat-number" id="total-revenue">₹0</p>
+                            </div>
+                        </div>
+                        <div class="analytics-stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-info">
+                                <h3>Total Orders</h3>
+                                <p class="stat-number" id="total-orders">0</p>
+                            </div>
+                        </div>
+                        <div class="analytics-stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-info">
+                                <h3>Avg Order Value</h3>
+                                <p class="stat-number" id="avg-order-value">₹0</p>
+                            </div>
+                        </div>
+                        <div class="analytics-stat-card">
+                            <div class="stat-icon">⭐</div>
+                            <div class="stat-info">
+                                <h3>Top Category</h3>
+                                <p class="stat-number" id="top-category">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales Tab -->
+                <div id="sales-tab" class="analytics-tab-content">
+                    <div class="sales-period-selector">
+                        <button class="period-btn active" onclick="switchPeriod('daily')">Daily</button>
+                        <button class="period-btn" onclick="switchPeriod('weekly')">Weekly</button>
+                        <button class="period-btn" onclick="switchPeriod('monthly')">Monthly</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                    <div class="sales-summary">
+                        <div class="summary-card">
+                            <h4>Period Sales</h4>
+                            <p id="period-sales">₹0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Period Orders</h4>
+                            <p id="period-orders">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Items Tab -->
+                <div id="popular-tab" class="analytics-tab-content">
+                    <div class="popular-items-section">
+                        <div class="popular-charts">
+                            <div class="chart-container">
+                                <h4>Most Popular Items</h4>
+                                <canvas id="popularItemsChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h4>Category Distribution</h4>
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="popular-items-list-container">
+                            <h4>Top 10 Items</h4>
+                            <div id="popular-items-list" class="popular-list">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Socket.IO Script -->
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+// Initialize Socket.IO connection for real-time updates
+const socket = io();
+
+// Audio notification system
+let audioContext = null;
+let isAudioEnabled = false;
+
+// Initialize audio context after user interaction
+function initializeAudio() {
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            isAudioEnabled = true;
+            console.log('Audio context initialized successfully');
+        } catch (e) {
+            console.warn('Audio not supported:', e);
+        }
+    }
+}
+
+// Play notification sound
+function playNotificationSound(type = 'normal') {
+    if (!audioContext || !isAudioEnabled) {
+        initializeAudio();
+        if (!audioContext) return;
+    }
+    
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
+    try {
+        if (type === 'order') {
+            // Special sound for new orders - double beep
+            playBeep(800, 0.3, 0.3);
+            setTimeout(() => playBeep(1000, 0.3, 0.3), 300);
+        } else {
+            // Normal notification sound
+            playBeep(600, 0.2, 0.2);
+        }
+    } catch (e) {
+        console.warn('Could not play sound:', e);
+    }
+}
+
+function playBeep(frequency, duration, volume) {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+// Flash message system
+function showFlashMessage(message, type = 'info', isUrgent = false) {
+    // Remove existing flash messages
+    const existingFlash = document.querySelector('.flash-notification');
+    if (existingFlash) {
+        existingFlash.remove();
+    }
+    
+    const flashContainer = document.querySelector('.admin-container');
+    const flashDiv = document.createElement('div');
+    flashDiv.className = `flash-notification flash-${type} ${isUrgent ? 'urgent' : ''}`;
+    flashDiv.innerHTML = `
+        <div class="flash-content">
+            <span class="flash-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'order' ? '🔔' : 'ℹ️'}</span>
+            <span class="flash-text">${message}</span>
+            <button class="flash-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+        </div>
+    `;
+    
+    flashContainer.insertBefore(flashDiv, flashContainer.firstChild);
+    
+    // Auto-remove after 8 seconds for orders, 5 seconds for others
+    const autoRemoveTime = type === 'order' ? 8000 : 5000;
+    setTimeout(() => {
+        if (flashDiv.parentNode) {
+            flashDiv.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (flashDiv.parentNode) {
+                    flashDiv.remove();
+                }
+            }, 300);
+        }
+    }, autoRemoveTime);
+}
+
+// Show prominent order notification
+function showOrderNotificationBadge(message) {
+    const badge = document.createElement('div');
+    badge.className = 'order-notification-badge';
+    badge.textContent = message;
+    document.body.appendChild(badge);
+    
+    setTimeout(() => {
+        if (badge.parentNode) {
+            badge.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (badge.parentNode) {
+                    badge.remove();
+                }
+            }, 300);
+        }
+    }, 4000);
+}
+
+// Listen for order confirmation notifications (when customer clicks "Place Order")
+socket.on('order_confirmed_notification', function(data) {
+    console.log('🎉 NEW ORDER CONFIRMED:', data);
+    
+    // Play special order sound
+    playNotificationSound('order');
+    
+    // Show flash message
+    showFlashMessage(data.message, 'order', true);
+    
+    // Show prominent badge
+    showOrderNotificationBadge(`NEW ORDER: Table ${data.table_number}`);
+    
+    // Highlight the new order when it appears in the table
+    setTimeout(() => {
+        const tableRow = document.querySelector(`tr[data-table="${data.table_number}"]`);
+        if (tableRow) {
+            tableRow.classList.add('new-order-highlight');
+            setTimeout(() => {
+                tableRow.classList.remove('new-order-highlight');
+            }, 3000);
+        }
+    }, 500);
+});
+
+// Listen for item additions (when customer adds items to cart)
+socket.on('new_order_notification', function(data) {
+    console.log('New item added:', data);
+    showFlashMessage(data.message, 'info');
+    playNotificationSound('normal');
+});
+
+// Listen for cart updates (when customer modifies quantities)
+socket.on('order_update_notification', function(data) {
+    console.log('Order updated:', data);
+    showFlashMessage(data.message, 'info');
+    playNotificationSound('normal');
+});
+
+// Listen for admin cart updates
+socket.on('admin_cart_update', function(data) {
+    console.log('Received cart update:', data);
+    console.log('CART data structure:', JSON.stringify(data.carts, null, 2));
+    updateOrdersTable(data.carts);
+    
+    // Also update analytics if they're visible
+    if (document.getElementById('analyticsModal').style.display === 'flex') {
+        loadAnalyticsData();
+    }
+});
+
+// Listen for connection status
+socket.on('connect', function() {
+    console.log('Socket.IO connected to admin panel');
+    console.log('Socket ID:', socket.id);
+});
+
+socket.on('disconnect', function() {
+    console.log('Socket.IO disconnected from admin panel');
+});
+
+// Initialize audio on first click
+document.addEventListener('click', function() {
+    if (!isAudioEnabled) {
+        initializeAudio();
+    }
+}, { once: true });
+
+// ...existing code...
+
+// Listen for cart deletions
+socket.on('cart_deleted', function(data) {
+    console.log('Cart deleted for table:', data.table_number);
+    // Remove the table row from the display
+    const tableRow = document.querySelector(`tr[data-table="${data.table_number}"]`);
+    if (tableRow) {
+        tableRow.remove();
+    }
+    
+    // Check if no orders remain
+    const tbody = document.querySelector('.orders-table tbody');
+    if (tbody && tbody.children.length === 0) {
+        document.querySelector('.table-container').innerHTML = '<p>No active orders at the moment.</p>';
+    }
+});
+
+function updateOrdersTable(carts) {
+    console.log('updateOrdersTable called with:', carts);
+    
+    const ordersContainer = document.querySelector('.orders-container');
+    if (!ordersContainer) {
+        console.log('Orders container not found!');
+        return;
+    }
+    
+    // Filter to only show orders that are placed (not just preparing)
+    const activeCarts = {};
+    Object.entries(carts).forEach(([tableNumber, cartData]) => {
+        const meta = cartData._meta || {};
+        const status = meta.status;
+        
+        console.log(`Table ${tableNumber} status: ${status}`);
+        
+        // Only show orders that are actually placed
+        if (status && ['Ordered', 'Cooking', 'Served'].includes(status)) {
+            const items = Object.fromEntries(
+                Object.entries(cartData).filter(([key]) => key !== '_meta')
+            );
+            
+            // Only include if there are actual items
+            if (Object.keys(items).length > 0) {
+                activeCarts[tableNumber] = {
+                    items: items,
+                    status: status,
+                    last_updated: meta.last_updated || '',
+                    total: Object.values(items).reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                };
+                console.log(`Added table ${tableNumber} to active carts`);
+            }
+        }
+    });
+    
+    console.log('Active carts after filtering:', activeCarts);
+    
+    // Check if we have any active orders
+    if (Object.keys(activeCarts).length === 0) {
+        console.log('No active orders found, showing empty message');
+        ordersContainer.innerHTML = '<p>No active orders at the moment.</p>';
+        return;
+    }
+    
+    console.log(`Creating table with ${Object.keys(activeCarts).length} orders`);
+    
+    // Create or update the table
+    const existingTable = ordersContainer.querySelector('.orders-table');
+    if (existingTable) {
+        existingTable.remove();
+    }
+    
+    const tableHTML = `
+        <table class="orders-table">
+            <thead>
+                <tr>
+                    <th>Table</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Last Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(activeCarts).map(([tableNumber, cartData]) => `
+                    <tr data-table="${tableNumber}">
+                        <td><strong>#${tableNumber}</strong></td>
+                        <td>
+                            <ul class="admin-items-list">
+                                ${Object.values(cartData.items).map(item => 
+                                    `<li>${item.name} <span class="qty">x${item.quantity}</span></li>`
+                                ).join('')}
+                            </ul>
+                        </td>
+                        <td>₹${cartData.total.toFixed(2)}</td>
+                        <td>
+                            <form method="POST" action="/update_cart_status" class="status-form">
+                                <input type="hidden" name="table_number" value="${tableNumber}">
+                                <select name="status" onchange="this.form.submit()" class="status-select">
+                                    <option value="Preparing" ${cartData.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
+                                    <option value="Ordered" ${cartData.status === 'Ordered' ? 'selected' : ''}>Ordered</option>
+                                    <option value="Cooking" ${cartData.status === 'Cooking' ? 'selected' : ''}>Cooking</option>
+                                    <option value="Served" ${cartData.status === 'Served' ? 'selected' : ''}>Served</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td>${cartData.last_updated}</td>
+                        <td>
+                            <form method="POST" action="/delete_cart/${tableNumber}" onsubmit="return confirm('Clear order for table ${tableNumber}?');">
+                                <button type="submit" class="btn btn-danger">Clear</button>
+                            </form>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    ordersContainer.innerHTML = tableHTML;
+    console.log('Table HTML updated successfully');
+}
+
+// Add visual notification for new orders (legacy support)
+function showNotification(message) {
+    showFlashMessage(message, 'info');
+}
+
+// ...existing code...
+
+// Add CSS for notifications
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    .notification {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+`;
+document.head.appendChild(style);
+
+// Analytics functionality
+let salesChart = null;
+let popularItemsChart = null;
+let categoryChart = null;
+
+function openAnalyticsModal() {
+    document.getElementById('analyticsModal').style.display = 'flex';
+    loadAnalyticsData();
+}
+
+function closeAnalyticsModal() {
+    document.getElementById('analyticsModal').style.display = 'none';
+}
+
+function switchAnalyticsTab(tabName) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.analytics-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.analytics-tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected tab and content
+    document.querySelector(`[onclick="switchAnalyticsTab('${tabName}')"]`).classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Load specific tab data
+    if (tabName === 'sales') {
+        loadSalesChart('daily');
+    } else if (tabName === 'popular') {
+        loadPopularItemsCharts();
+    }
+}
+
+function switchPeriod(period) {
+    document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[onclick="switchPeriod('${period}')"]`).classList.add('active');
+    loadSalesChart(period);
+}
+
+async function loadAnalyticsData() {
+    try {
+        const response = await fetch('/api/analytics');
+        const data = await response.json();
+        
+        // Update overview stats
+        document.getElementById('total-revenue').textContent = `₹${data.overview.total_revenue.toFixed(2)}`;
+        document.getElementById('total-orders').textContent = data.overview.total_orders;
+        document.getElementById('avg-order-value').textContent = `₹${data.overview.avg_order_value.toFixed(2)}`;
+        document.getElementById('top-category').textContent = data.overview.top_category;
+        
+    } catch (error) {
+        console.error('Error loading analytics data:', error);
+    }
+}
+
+async function loadSalesChart(period) {
+    try {
+        const response = await fetch(`/api/analytics/sales?period=${period}`);
+        const data = await response.json();
+        
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        
+        if (salesChart) {
+            salesChart.destroy();
+        }
+        
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: data.revenue,
+                    borderColor: '#4a90e2',
+                    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Orders',
+                    data: data.orders,
+                    borderColor: '#50c878',
+                    backgroundColor: 'rgba(80, 200, 120, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue (₹)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Orders'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+        
+        // Update period summary
+        document.getElementById('period-sales').textContent = `₹${data.total_revenue.toFixed(2)}`;
+        document.getElementById('period-orders').textContent = data.total_orders;
+        
+    } catch (error) {
+        console.error('Error loading sales chart:', error);
+    }
+}
+
+async function loadPopularItemsCharts() {
+    try {
+        const response = await fetch('/api/analytics/popular');
+        const data = await response.json();
+        
+        // Popular Items Chart
+        const itemsCtx = document.getElementById('popularItemsChart').getContext('2d');
+        if (popularItemsChart) {
+            popularItemsChart.destroy();
+        }
+        
+        popularItemsChart = new Chart(itemsCtx, {
+            type: 'bar',
+            data: {
+                labels: data.items.labels,
+                datasets: [{
+                    label: 'Orders',
+                    data: data.items.data,
+                    backgroundColor: [
+                        '#4a90e2', '#50c878', '#ffa500', '#ff6b6b', '#9b59b6',
+                        '#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9c88ff'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Orders'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        if (categoryChart) {
+            categoryChart.destroy();
+        }
+        
+        categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: data.categories.labels,
+                datasets: [{
+                    data: data.categories.data,
+                    backgroundColor: ['#4a90e2', '#50c878', '#ffa500']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+        
+        // Update popular items list
+        const listContainer = document.getElementById('popular-items-list');
+        listContainer.innerHTML = data.items.labels.map((item, index) => `
+            <div class="popular-item-row">
+                <span class="item-rank">${index + 1}</span>
+                <span class="item-name">${item}</span>
+                <span class="item-count">${data.items.data[index]} orders</span>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading popular items charts:', error);
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('analyticsModal');
+    if (event.target === modal) {
+        closeAnalyticsModal();
+    }
+}
+</script>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

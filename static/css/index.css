@@ -1,0 +1,362 @@
+/* Enhanced Landing Page Styles - Blue Theme */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-primary);
+    overflow: hidden;
+    height: 100vh;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 50%, #80deea 100%);
+    position: relative;
+}
+
+/* Main container with enhanced blue gradient */
+.container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 70%, #00c6ff 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-white);
+    overflow: hidden;
+}
+
+/* Animated Background Decorations */
+.background-images {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.bg-img {
+    position: absolute;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)) hue-rotate(200deg) saturate(0.5);
+    transition: all 0.3s ease;
+}
+
+/* Specific positioning and animations for food elements */
+.bg-img:nth-child(1) { 
+    width: 120px; 
+    top: 10%; 
+    left: 5%; 
+    animation: float 25s infinite linear, blue-glow 3s ease-in-out infinite alternate;
+}
+
+.bg-img:nth-child(2) { 
+    width: 100px; 
+    top: 15%; 
+    right: 8%; 
+    animation: float 35s infinite linear reverse, pulse-blue 4s ease-in-out infinite;
+}
+
+.bg-img:nth-child(3) { 
+    width: 140px; 
+    top: 65%; 
+    left: 12%; 
+    animation: float 40s infinite linear, bounce-gentle 6s ease-in-out infinite;
+}
+
+.bg-img:nth-child(4) { 
+    width: 110px; 
+    top: 75%; 
+    right: 15%; 
+    animation: float 28s infinite linear reverse, rotate-gentle 8s linear infinite;
+}
+
+.bg-img:nth-child(5) { 
+    width: 90px; 
+    top: 40%; 
+    left: 85%; 
+    animation: float 32s infinite linear, scale-pulse 5s ease-in-out infinite;
+}
+
+.bg-img:nth-child(6) { 
+    width: 130px; 
+    bottom: 20%; 
+    left: 50%; 
+    transform: translateX(-50%);
+    animation: float 45s infinite linear reverse, swing 7s ease-in-out infinite;
+}
+
+/* Enhanced animations with blue theme */
+@keyframes float {
+    0% { transform: translateY(0) rotate(0deg) scale(1); }
+    25% { transform: translateY(-30px) rotate(90deg) scale(1.1); }
+    50% { transform: translateY(-60px) rotate(180deg) scale(1.2); }
+    75% { transform: translateY(-30px) rotate(270deg) scale(1.1); }
+    100% { transform: translateY(0) rotate(360deg) scale(1); }
+}
+
+@keyframes blue-glow {
+    0% { filter: drop-shadow(0 0 5px rgba(66, 165, 245, 0.3)) hue-rotate(200deg) saturate(0.5); }
+    100% { filter: drop-shadow(0 0 20px rgba(66, 165, 245, 0.6)) hue-rotate(200deg) saturate(0.5); }
+}
+
+@keyframes pulse-blue {
+    0%, 100% { filter: hue-rotate(200deg) saturate(0.5); }
+    50% { filter: hue-rotate(200deg) saturate(0.8) brightness(1.2); }
+}
+
+@keyframes bounce-gentle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+@keyframes rotate-gentle {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes scale-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes swing {
+    0%, 100% { transform: translateX(-50%) rotate(0deg); }
+    25% { transform: translateX(-50%) rotate(5deg); }
+    75% { transform: translateX(-50%) rotate(-5deg); }
+}
+
+/* Hero Section Enhancement */
+.hero-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100vh;
+    padding: 0 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.hero-content {
+    max-width: 600px;
+    backdrop-filter: blur(15px);
+    background: rgba(59, 130, 246, 0.15);
+    padding: 3rem;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(147, 197, 253, 0.3);
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.2);
+}
+
+.hero-content h1 {
+    font-family: var(--font-accent);
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #ffffff, #bfdbfe, #93c5fd, #60a5fa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+    animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+.hero-content p {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    margin-bottom: 2.5rem;
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 300;
+    line-height: 1.6;
+    animation: fadeInUp 1s ease-out 0.6s both;
+}
+
+.hero-content .btn {
+    font-size: 1.2rem;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+    animation: fadeInUp 1s ease-out 0.9s both, pulse-button 2s ease-in-out 2s infinite;
+    transition: all 0.3s ease;
+}
+
+.hero-content .btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(59, 130, 246, 0.6);
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+/* Admin Corner Enhancement */
+.admin-corner {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    z-index: 1000;
+    animation: slideInRight 1s ease-out 1.2s both;
+}
+
+.admin-corner .btn {
+    background: rgba(59, 130, 246, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(147, 197, 253, 0.4);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.admin-corner .btn:hover {
+    background: rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+    border-color: rgba(147, 197, 253, 0.6);
+}
+
+/* Enhanced Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 450px;
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    padding: 2.5rem;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.7);
+    transition: all 0.3s var(--transition-spring);
+}
+
+.modal.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    font-family: var(--font-primary);
+    font-size: 2.2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 1.2rem;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    background: var(--background-color);
+}
+
+.modal-content input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: var(--card-background);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.modal-actions .btn {
+    min-width: 120px;
+    padding: 0.875rem 1.5rem;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-content {
+        padding: 2rem;
+        margin: 1rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-content p {
+        font-size: 1.1rem;
+    }
+    
+    .admin-corner {
+        top: 20px;
+        right: 20px;
+    }
+    
+    .bg-img {
+        opacity: 0.08;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-content {
+        padding: 1.5rem;
+    }
+    
+    .modal-content {
+        padding: 2rem;
+        margin: 1rem;
+    }
+}
+
+/* Additional Animations */
+@keyframes pulse-button {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    0% {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

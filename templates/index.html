@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome - Aroma Restaurant{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Animated background images -->
+<div class="background-images">
+    <img src="{{ url_for('static', filename='images/leaf.svg') }}" class="bg-img">
+    <img src="{{ url_for('static', filename='images/yalee.svg') }}" class="bg-img">
+    <img src="{{ url_for('static', filename='images/garlic.svg') }}" class="bg-img">
+    <img src="{{ url_for('static', filename='images/onion.svg') }}" class="bg-img">
+    <img src="{{ url_for('static', filename='images/corender.svg') }}" class="bg-img">
+    <img src="{{ url_for('static', filename='images/soppu2.svg') }}" class="bg-img">
+</div>
+
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="fade-in-up">Welcome to Aroma</h1>
+        <p class="fade-in-up" style="animation-delay: 0.2s;">Experience the finest dining in town, delivered to your table.</p>
+        <button class="btn btn-primary fade-in-up" style="animation-delay: 0.4s;" id="orderBtn">Order Now</button>
+    </div>
+</div>
+
+<div class="admin-corner">
+    <button class="btn btn-secondary" id="adminBtn">Admin Panel</button>
+</div>
+
+<!-- Table Number Input Modal -->
+<div id="table-modal" class="modal">
+    <div class="modal-content card fade-in-up">
+        <h2>Enter Your Table Number</h2>
+        <form id="table-form">
+            <input type="number" id="table-number" placeholder="e.g., 5" required min="1" autofocus>
+            <div class="modal-actions">
+                <button type="submit" id="submit-table-btn" class="btn btn-primary">Proceed</button>
+                <button type="button" id="close-modal-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    width: 300px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+}
+
+.modal.show {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content input {
+    width: 80%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.modal-content button {
+    background-color: #5cb85c;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.modal-content button:hover {
+    background-color: #4cae4c;
+}
+
+.cancel-btn {
+    background-color: #d9534f;
+}
+
+.cancel-btn:hover {
+    background-color: #c9302c;
+}
+
+.order-button:hover {
+    background-color: #4cae4c;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const orderBtn = document.getElementById("orderBtn");
+    const adminBtn = document.getElementById("adminBtn");
+    const modal = document.getElementById("table-modal");
+    const tableForm = document.getElementById("table-form");
+    const closeModalBtn = document.getElementById("close-modal-btn");
+    const tableInput = document.getElementById("table-number");
+
+    orderBtn.addEventListener("click", () => {
+        modal.style.display = "flex";
+        setTimeout(() => {
+            modal.classList.add("show");
+            tableInput.focus();
+        }, 10);
+    });
+
+    function closeModal() {
+        modal.classList.remove("show");
+        setTimeout(() => {
+            modal.style.display = "none";
+        }, 300);
+    }
+
+    closeModalBtn.addEventListener("click", closeModal);
+    window.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    tableForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const tableNumber = tableInput.value.trim();
+        if (!tableNumber || isNaN(tableNumber) || tableNumber <= 0) {
+            alert("Please enter a valid table number.");
+            return;
+        }
+        window.location.href = `/categories?table_number=${tableNumber}`;
+    });
+
+    adminBtn.addEventListener("click", () => {
+        window.location.href = "/admin_login";
+    });
+});
+</script>
+{% endblock %}
