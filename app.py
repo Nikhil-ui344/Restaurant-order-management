@@ -772,6 +772,40 @@ def analytics():
     return render_template('analytics.html')
 
 
+def init_db():
+    """Initialize the database tables if they don't exist."""
+    try:
+        conn = sqlite3.connect('instance/restaurant.db')
+        cursor = conn.cursor()
+        # Create completed_orders table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS completed_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                table_number TEXT,
+                total_amount REAL,
+                order_date TIMESTAMP,
+                completed_date TIMESTAMP
+            )
+        ''')
+        # Create order_items table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER,
+                item_name TEXT,
+                item_price REAL,
+                quantity INTEGER,
+                category TEXT,
+                order_date TIMESTAMP,
+                FOREIGN KEY(order_id) REFERENCES completed_orders(id)
+            )
+        ''')
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
 if __name__ == '__main__':
     # Create database tables if they don't exist
     init_db()
