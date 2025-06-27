@@ -806,6 +806,37 @@ def init_db():
     except Exception as e:
         print(f"Error initializing database: {e}")
 
+# Add these routes if they don't exist
+
+@app.route('/api/analytics')
+def get_analytics():
+    try:
+        conn = sqlite3.connect('instance/restaurant.db')
+        cursor = conn.cursor()
+        
+        # Get basic analytics
+        cursor.execute('SELECT COUNT(*), SUM(total_amount) FROM completed_orders')
+        result = cursor.fetchone()
+        
+        total_orders = result[0] or 0
+        total_revenue = result[1] or 0
+        avg_order_value = (total_revenue / total_orders) if total_orders > 0 else 0
+        
+        conn.close()
+        
+        return jsonify({
+            'total_orders': total_orders,
+            'total_revenue': round(total_revenue, 2),
+            'avg_order_value': round(avg_order_value, 2)
+        })
+    except Exception as e:
+        print(f"Analytics error: {e}")
+        return jsonify({
+            'total_orders': 0,
+            'total_revenue': 0,
+            'avg_order_value': 0
+        })
+
 if __name__ == '__main__':
     # Create database tables if they don't exist
     init_db()
